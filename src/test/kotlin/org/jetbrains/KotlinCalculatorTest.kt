@@ -25,8 +25,31 @@ class KotlinCalculatorTest {
         expected: String
     ) {
         val expression = "$firstOperand $operator $secondOperand"
+        LOG.info("Expression used: $expression")
         val actual = KotlinCalculator().evaluate(expression)
-        assertEquals(expected.toDouble(), actual, calcDelta)
+        assertEquals(expected.toDouble(), actual, calcDelta, "Calculation is not as expected")
+    }
+
+    @ParameterizedTest
+    @CsvFileSource(resources = ["/priorities_pairwise.csv"], numLinesToSkip = 1)
+    @DisplayName("All priorities of binary operations should be calculated properly")
+    fun prioritiesCalculation(
+        firstOperand: String,
+        firstOperator: String,
+        secondOperand: String,
+        secondOperator: String,
+        thirdOperand: String,
+        isBrackets: String,
+        expected: String
+    ) {
+        val expression = if (isBrackets.toBoolean()) {
+            "( $firstOperand $firstOperator $secondOperand ) $secondOperator $thirdOperand"
+        } else {
+            "$firstOperand $firstOperator $secondOperand $secondOperator $thirdOperand"
+        }
+        LOG.info("Expression used: $expression")
+        val actual = KotlinCalculator().evaluate(expression)
+        assertEquals(expected.toDouble(), actual, calcDelta, "Calculation is not as expected")
     }
 
     @Nested
@@ -106,16 +129,16 @@ class KotlinCalculatorTest {
         }
 
         @Test
-        @DisplayName("Numbers with leading zeros processed as usual numbers")
+        @DisplayName("Numbers with leading zeros are treated as usual numbers")
         fun leadingZeros() {
             val expression = "5 + 0003"
             val actual = KotlinCalculator().evaluate(expression)
-            assertEquals(8.0, actual, calcDelta,"Numbers are not the same")
+            assertEquals(8.0, actual, calcDelta, "Numbers are not the same")
         }
 
         @Test
-        @DisplayName("Expression with missing open bracket can't be processed")
-        fun missingOpenBracket() {
+        @DisplayName("Expression with missing opening bracket can't be processed")
+        fun missingOpeningBracket() {
             val expression = "7 + 10 )"
             val ex = assertThrows(IllegalStateException::class.java) {
                 KotlinCalculator().evaluate(expression)
@@ -124,8 +147,8 @@ class KotlinCalculatorTest {
         }
 
         @Test
-        @DisplayName("Expression with missing close bracket can't be processed")
-        fun missingCloseBracket() {
+        @DisplayName("Expression with missing closing bracket can't be processed")
+        fun missingClosingBracket() {
             val expression = "( 7 + 10"
             val ex = assertThrows(IllegalStateException::class.java) {
                 KotlinCalculator().evaluate(expression)
@@ -134,16 +157,71 @@ class KotlinCalculatorTest {
         }
 
         @Test
-        @DisplayName("Expression with extra spaces calculated properly")
+        @DisplayName("Expression with extra spaces is calculated properly")
         fun extraSpaces() {
             val expression = "15  + 12 "
             val actual = KotlinCalculator().evaluate(expression)
-            assertEquals(27.0, actual, calcDelta,"Numbers are not the same")
+            assertEquals(27.0, actual, calcDelta, "Numbers are not the same")
         }
 
+        @Test
+        @DisplayName("Division by zero returns infinity")
+        fun divisionByZero() {
+            val expression = "10 / 0"
+            val actual = KotlinCalculator().evaluate(expression)
+            assertEquals(Double.POSITIVE_INFINITY, actual, calcDelta, "Positive infinity expected")
+        }
+
+        @Test
+        @DisplayName("Division fraction by zero returns infinity")
+        fun divisionFractionByZero() {
+            val expression = "10.0 / 0"
+            val actual = KotlinCalculator().evaluate(expression)
+            assertEquals(Double.POSITIVE_INFINITY, actual, calcDelta, "Positive infinity expected")
+        }
+
+        @Test
+        @DisplayName("Division zero by zero returns NaN")
+        fun divisionZeroByZero() {
+            val expression = "0 / 0"
+            val actual = KotlinCalculator().evaluate(expression)
+            assertEquals(Double.NaN, actual, calcDelta, "NaN expected")
+        }
+
+        @Test
+        @DisplayName("Unary minus before number is calculated properly")
+        fun unaryMinus() {
+            val expression = "- 5 + 3"
+            val actual = KotlinCalculator().evaluate(expression)
+            assertEquals(-2.0, actual, calcDelta, "Numbers are not the same")
+        }
+
+        @Test
+        @DisplayName("Unary minus before bracket is calculated properly")
+        fun unaryMinusBeforeBracket() {
+            val expression = "- ( 1 - 3 )"
+            val actual = KotlinCalculator().evaluate(expression)
+            assertEquals(2.0, actual, calcDelta, "Numbers are not the same")
+        }
+
+        @Test
+        @DisplayName("Unary plus before number is calculated properly")
+        fun unaryPlusBeforeNumber() {
+            val expression = "+ 5 + 3"
+            val actual = KotlinCalculator().evaluate(expression)
+            assertEquals(8.0, actual, calcDelta, "Numbers are not the same")
+        }
+
+        @Test
+        @DisplayName("Unary plus before bracket is calculated properly")
+        fun unaryPlusBeforeBracket() {
+            val expression = "+ ( 5 - 3 )"
+            val actual = KotlinCalculator().evaluate(expression)
+            assertEquals(2.0, actual, calcDelta, "Numbers are not the same")
+        }
     }
 
     companion object {
-        val LOG: Logger = LoggerFactory.getLogger(KotlinCalculatorTest::class.java)
+        private val LOG: Logger = LoggerFactory.getLogger(KotlinCalculatorTest::class.java)
     }
 }

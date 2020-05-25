@@ -1,0 +1,9 @@
+Arg1, Operation1, Arg2, Operation2, Arg3, Brackets (btw arg1 and arg2), Expected
+10, +, 2, *, 3, true, 36
+10, +, 2, *, 3, false, 16
+10, +, 2, /, 3, true, 4
+10, +, 2, /, 3, false, 10.6667
+10, -, 2, *, 3, true, 24
+10, -, 2, *, 3, false, 4
+10, -, 2, /, 3, true, 2.6667
+10, -, 2, /, 3, false, 9.3334
