@@ -26,7 +26,6 @@ class KotlinCalculator {
         val calculations = ArrayDeque<String>()
 
         expression.forEachIndexed { index, value ->
-            // TODO: unary minus
             when {
                 value == ")" -> {
                     var lastOperation: String? = null
