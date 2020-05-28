@@ -1,7 +1,6 @@
 package org.jetbrains
 
 import java.util.*
-import kotlin.IllegalStateException
 
 /*
 Create a simple calculator that given a string of operators (), +, -, *, / and numbers separated by spaces
@@ -15,6 +14,7 @@ class KotlinCalculator {
 
     fun evaluate(str: String): Double {
         val expression = str.split(" ").filter { value -> value.isNotBlank() }
+        if (expression.isEmpty()) throw IllegalStateException("Empty input expression")
         return calculateWithRPN(expression).first().toDouble()
     }
 
@@ -43,13 +43,13 @@ class KotlinCalculator {
                     operationsStack.push(value)
                 }
                 isOperation(value) -> {
-                    val currOp = if (isUnary(value, expression.getOrNull(index-1))) "u$value" else value
-                    if (operationsStack.isNotEmpty()) {
-                        val operationPriority = getOperationPriority(currOp)
-                        val stackOpPriority = getOperationPriority(operationsStack.first)
-                        while (operationsStack.isNotEmpty() && operationPriority <= stackOpPriority) {
-                            processOperation(calculations, operationsStack.pop())
-                        }
+                    val currOp = if (isUnaryInExpression(value, expression.getOrNull(index - 1))) "u$value" else value
+                    val operationPriority = getOperationPriority(currOp)
+                    while (operationsStack.isNotEmpty() &&
+                        ((!isUnary(currOp) && operationPriority <= getOperationPriority(operationsStack.first))
+                                || (isUnary(currOp) && operationPriority < getOperationPriority(operationsStack.first)))
+                    ) {
+                        processOperation(calculations, operationsStack.pop())
                     }
                     operationsStack.push(currOp)
                 }
@@ -70,17 +70,20 @@ class KotlinCalculator {
             processOperation(calculations, operationsStack.pop())
         }
 
+        if (calculations.size != 1) throw IllegalStateException("Not enough operations to calculate")
+
         return calculations
     }
 
     private fun processOperation(calculations: Deque<String>, operation: String) {
-        val isUnaryOp = operation.contains("u")
+        val isUnaryOp = isUnary(operation)
         val realOperation = if (isUnaryOp) operation.last().toString() else operation
         if (!isUnaryOp && calculations.size < 2 || calculations.isEmpty()) {
             throw IllegalStateException("No numbers to calculate with operation $realOperation")
         }
         val firstArg = calculations.pop()
         val secondArg = if (isUnaryOp) "0" else calculations.pop()
+        if (operation == "/" && firstArg.toDouble() == 0.0) throw IllegalStateException("Division by zero")
         val calculation = applyOperation(firstArg, secondArg, realOperation)
         calculations.push(calculation)
     }
@@ -103,10 +106,12 @@ class KotlinCalculator {
         }.toString()
     }
 
-    private fun isUnary(value: String, prevValue: String?): Boolean {
-        val isAllowedPrevValue = prevValue in (listOf("(", null) + operations)
+    private fun isUnaryInExpression(value: String, prevValue: String?): Boolean {
+        val isAllowedPrevValue = prevValue in (listOf(null, *operations.toTypedArray()))
         return value in listOf("+", "-") && isAllowedPrevValue
     }
+
+    private fun isUnary(operation: String) = operation.contains("u")
 
     private fun isNumber(value: String): Boolean = value.toDoubleOrNull() != null
 
