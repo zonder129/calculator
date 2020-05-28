@@ -18,6 +18,7 @@ First two aspects have to be validated with the pairwise method.
 
 ### Testing artifacts
 CSV files for pairwise testing (located in resources folder):
+
 `operation_pairwise.csv`
 
 `priorities_pariwise.csv`
